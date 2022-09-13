@@ -62,7 +62,6 @@ impl<'a> Scanner<'a> {
     }
     pub fn advance(&mut self) -> char {
         let current = self.current;
-        println!("{}", current);
         self.current += 1;
 
         self.contents
