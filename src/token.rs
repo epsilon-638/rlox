@@ -1,4 +1,4 @@
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum TokenType {
     LeftParen,
     RightParen,
@@ -37,19 +37,21 @@ pub enum TokenType {
     True,
     Var,
     While,
+    EOF,
 }
 
+#[derive(Debug, Clone)]
 pub struct Token {
     token_type: TokenType,
     lexeme: String,
-    line: i32,
+    line: usize,
 }
 
 impl Token {
     pub fn new(
         token_type: TokenType,
         lexeme: String,
-        line: i32,
+        line: usize,
     ) -> Token {
         Token {
             token_type,

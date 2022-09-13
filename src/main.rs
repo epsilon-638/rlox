@@ -6,9 +6,13 @@ mod scanner;
 mod token;
 
 fn run(contents: &str) {
-    let scanner = scanner::Scanner::new(contents);
+    let mut scanner = scanner::Scanner::new(contents);
 
-    println!("{}", scanner.get_contents());
+    scanner.scan_tokens();
+
+    for token in scanner.get_tokens() {
+        println!("{}", token.to_string());
+    }
 }
 
 fn run_file(file_path: &str) {
