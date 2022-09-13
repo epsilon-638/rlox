@@ -42,23 +42,56 @@ impl<'a> Scanner<'a> {
     }
     pub fn scan_token(&mut self) -> Option<Token> {
         match self.advance() {
-            '(' => Some(Token::new(TokenType::LeftParen, String::from(""), self.line)),
-            ')' => Some(Token::new(TokenType::RightParen, String::from(""), self.line)),
-            '{' => Some(Token::new(TokenType::LeftBrace, String::from(""), self.line)),
-            '}' => Some(Token::new(TokenType::RightBrace, String::from(""), self.line)),
-            ',' => Some(Token::new(TokenType::Comma, String::from(""), self.line)),
-            '.' => Some(Token::new(TokenType::Dot, String::from(""), self.line)),
-            '-' => Some(Token::new(TokenType::Minus, String::from(""), self.line)),
-            '+' => Some(Token::new(TokenType::Plus, String::from(""), self.line)),
-            ';' => Some(Token::new(TokenType::Semicolon, String::from(""), self.line)),
-            '*' => Some(Token::new(TokenType::Star, String::from(""), self.line)),
+            '(' => self.new_token(TokenType::LeftParen),
+            ')' => self.new_token(TokenType::RightParen),
+            '{' => self.new_token(TokenType::LeftBrace),
+            '}' => self.new_token(TokenType::RightBrace),
+            ',' => self.new_token(TokenType::Comma),
+            '.' => self.new_token(TokenType::Dot),
+            '-' => self.new_token(TokenType::Minus),
+            '+' => self.new_token(TokenType::Plus),
+            ';' => self.new_token(TokenType::Semicolon),
+            '*' => self.new_token(TokenType::Star),
             '\n' => self.new_line(),
+            '!' => {
+                match self.match_char('=') {
+                    true => self.new_token(TokenType::BangEqual),
+                    false => self.new_token(TokenType::Bang),
+                }
+            },
+            '=' => {
+                match self.match_char('=') {
+                    true => self.new_token(TokenType::EqualEqual),
+                    false => self.new_token(TokenType::Equal),
+                }
+            },
+            '<' => {
+                match self.match_char('=') {
+                    true => self.new_token(TokenType::LessEqual),
+                    false => self.new_token(TokenType::Less),
+                }
+            },
+            '>' => {
+                match self.match_char('=') {
+                    true => self.new_token(TokenType::GreaterEqual),
+                    false => self.new_token(TokenType::GreaterEqual),
+                }
+            }
             _ => None,
        }
     }
     pub fn new_line(&mut self) -> Option<Token> {
         self.line += 1;
         None
+    }
+    pub fn new_token(&self, token_type: TokenType) -> Option<Token> {
+        Some(
+            Token::new(
+                token_type,
+                String::from(""),
+                self.line,
+            ),
+        )
     }
     pub fn advance(&mut self) -> char {
         let current = self.current;
@@ -68,6 +101,24 @@ impl<'a> Scanner<'a> {
             .chars()
             .nth(current)
             .unwrap()
+    }
+    pub fn match_char(&mut self, expected: char) -> bool {
+        if self.is_at_end() {
+            return false;
+        }
+
+        let next_char = self.contents
+            .chars()
+            .nth(self.current)
+            .unwrap();
+
+        if next_char != expected {
+            return false;
+        }
+
+        self.current += 1;
+
+        true
     }
     pub fn get_contents(&self) -> &str {
         self.contents.clone()
