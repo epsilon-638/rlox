@@ -59,7 +59,5 @@ fn main() {
 
     let file_path = &args[2];
 
-    println!("{}", file_path);
-
     run_file(file_path);
 }

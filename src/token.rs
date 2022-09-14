@@ -19,7 +19,7 @@ pub enum TokenType {
     GreaterEqual,
     Less,
     LessEqual,
-    Identifier,
+    Identifier(String),
     String(String),
     Number(i64),
     And,

@@ -1,9 +1,11 @@
-use crate::error::error;
+use crate::error::{ error, ErrorType, parser_error };
 use crate::token::{ Token, TokenType };
+use std::collections::HashMap;
 
 pub struct Scanner<'a> {
     contents: &'a str,
     tokens: Vec<Token>,
+    reserved_words: HashMap<&'a str, TokenType>,
     start: usize,
     current: usize,
     line: usize,
@@ -13,9 +15,28 @@ impl<'a> Scanner<'a> {
     pub fn new(contents: &str) -> Scanner {
         let tokens = Vec::new();
 
+        let reserved_words = HashMap::from([
+            ("and", TokenType::And),
+            ("class", TokenType::Class),
+            ("else", TokenType::Else),
+            ("false", TokenType::False),
+            ("for", TokenType::Fun),
+            ("if", TokenType::If),
+            ("nil", TokenType::Nil),
+            ("or", TokenType::Or),
+            ("print", TokenType::Print),
+            ("return", TokenType::Return),
+            ("super", TokenType::Super),
+            ("this", TokenType::This),
+            ("true", TokenType::True),
+            ("var", TokenType::Var),
+            ("while", TokenType::While),
+        ]);
+
         Scanner {
             contents,
-            tokens, 
+            tokens,
+            reserved_words,
             start: 0,
             current: 0,
             line: 1,
@@ -98,8 +119,9 @@ impl<'a> Scanner<'a> {
             '\t' => None,
             '"' => self.string_token(),
             '0' ..= '9' => self.number_token(),
+            'a' ..= 'z' | '_' => self.identifier_token(),
             _ => {
-                error(self.line, "Unexpected Character");
+                parser_error(self.line, ErrorType::UnexpectedChar);
 
                 None
             },
@@ -129,7 +151,7 @@ impl<'a> Scanner<'a> {
 
         self.advance();
 
-        let value = &self.contents[self.start..self.current-1];
+        let value = &self.contents[self.start+1..self.current-1];
 
         self.new_token(TokenType::String(value.to_string()))
     }
@@ -152,6 +174,22 @@ impl<'a> Scanner<'a> {
             .unwrap();
 
         self.new_token(TokenType::Number(value.clone()))
+    }
+    fn identifier_token(&mut self) -> Option<Token> {
+        while self.is_alphanumeric(self.peek_char()) {
+            self.advance();
+        }
+
+        let value = &self.contents[self.start..self.current];
+
+        match self.reserved_words.get(value) {
+            Some(identifier) => {
+                self.new_token(identifier.clone())
+            },
+            None => {
+                self.new_token(TokenType::Identifier(value.to_string()))
+            },
+        }
     }
     fn new_token(&self, token_type: TokenType) -> Option<Token> {
         Some(
@@ -211,6 +249,14 @@ impl<'a> Scanner<'a> {
     }
     fn is_digit(&self, c: char) -> bool {
         c >= '0' && c <= '9'
+    }
+    fn is_alpha(&self, c: char) -> bool {
+        c >= 'a' && 
+        c <= 'z' || 
+        c == '_'
+    }
+    fn is_alphanumeric(&self, c: char) -> bool {
+        self.is_digit(c) || self.is_alpha(c)
     }
     fn is_at_end(&self) -> bool {
         self.current >= self.contents.len()
