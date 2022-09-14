@@ -1,11 +1,11 @@
-pub fn error(line: i32, message: String) {
-    report(line, String::from(""), message) 
+pub fn error(line: usize, message: &str) {
+    report(line, "", message) 
 }
 
 pub fn report(
-    line: i32, 
-    error_where: String, 
-    message: String,
+    line: usize, 
+    error_where: &str, 
+    message: &str,
 ) {
     println!(
         "[line {l}] Error {e} where: {m}", 

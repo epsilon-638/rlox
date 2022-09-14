@@ -1,3 +1,4 @@
+use crate::error::error;
 use crate::token::{ Token, TokenType };
 
 pub struct Scanner<'a> {
@@ -40,8 +41,10 @@ impl<'a> Scanner<'a> {
 
         Vec::new()
     }
-    pub fn scan_token(&mut self) -> Option<Token> {
-        match self.advance() {
+    fn scan_token(&mut self) -> Option<Token> {
+        let c = self.advance();
+
+        match c {
             '(' => self.new_token(TokenType::LeftParen),
             ')' => self.new_token(TokenType::RightParen),
             '{' => self.new_token(TokenType::LeftBrace),
@@ -52,7 +55,7 @@ impl<'a> Scanner<'a> {
             '+' => self.new_token(TokenType::Plus),
             ';' => self.new_token(TokenType::Semicolon),
             '*' => self.new_token(TokenType::Star),
-            '\n' => self.new_line(),
+            '\n' => self.new_line_token(),
             '!' => {
                 match self.match_char('=') {
                     true => self.new_token(TokenType::BangEqual),
@@ -76,15 +79,81 @@ impl<'a> Scanner<'a> {
                     true => self.new_token(TokenType::GreaterEqual),
                     false => self.new_token(TokenType::GreaterEqual),
                 }
-            }
-            _ => None,
+            },
+            '/' => {
+                match self.match_char('/') {
+                    true => {
+                        while self.peek_char() != '\n' && !self.is_at_end() {
+                            self.advance();
+                        }
+                        // Comments are removed during lexing
+
+                        None
+                    },
+                    false => self.new_token(TokenType::Slash),
+                }
+            },
+            ' ' => None,
+            '\r' => None,
+            '\t' => None,
+            '"' => self.string_token(),
+            '0' ..= '9' => self.number_token(),
+            _ => {
+                error(self.line, "Unexpected Character");
+
+                None
+            },
        }
     }
-    pub fn new_line(&mut self) -> Option<Token> {
+    fn new_line(&mut self) {
         self.line += 1;
+    }
+    fn new_line_token(&mut self) -> Option<Token> {
+        self.new_line();
         None
     }
-    pub fn new_token(&self, token_type: TokenType) -> Option<Token> {
+    fn string_token(&mut self) -> Option<Token> {
+        while self.peek_char() != '"' && !self.is_at_end() {
+            if self.peek_char() == '\n' {
+                self.new_line();
+            }
+
+            self.advance();
+        }
+        
+        if self.is_at_end() {
+            error(self.line, "Unterminated String");
+
+            return None;
+        }
+
+        self.advance();
+
+        let value = &self.contents[self.start..self.current-1];
+
+        self.new_token(TokenType::String(value.to_string()))
+    }
+    fn number_token(&mut self) -> Option<Token> {
+        while self.is_digit(self.peek_char()) {
+            self.advance();
+        }
+
+        if self.peek_char() == '.' && self.is_digit(self.peek_next_char()) {
+            self.advance();
+
+            while self.is_digit(self.peek_char()) {
+                self.advance();
+            }
+        }
+
+        let value = &self.contents[self.start..self.current]
+            .trim()
+            .parse::<i64>()
+            .unwrap();
+
+        self.new_token(TokenType::Number(value.clone()))
+    }
+    fn new_token(&self, token_type: TokenType) -> Option<Token> {
         Some(
             Token::new(
                 token_type,
@@ -93,7 +162,7 @@ impl<'a> Scanner<'a> {
             ),
         )
     }
-    pub fn advance(&mut self) -> char {
+    fn advance(&mut self) -> char {
         let current = self.current;
         self.current += 1;
 
@@ -102,7 +171,7 @@ impl<'a> Scanner<'a> {
             .nth(current)
             .unwrap()
     }
-    pub fn match_char(&mut self, expected: char) -> bool {
+    fn match_char(&mut self, expected: char) -> bool {
         if self.is_at_end() {
             return false;
         }
@@ -120,13 +189,36 @@ impl<'a> Scanner<'a> {
 
         true
     }
+    fn peek_char(&self) -> char {
+        if self.is_at_end() {
+            return '\0';
+        }
+
+        self.contents
+            .chars()
+            .nth(self.current)
+            .unwrap()
+    }
+    fn peek_next_char(&self) -> char {
+        if self.current + 1 >= self.contents.len() {
+            return '\0';
+        }
+
+        self.contents
+            .chars()
+            .nth(self.current)
+            .unwrap()
+    }
+    fn is_digit(&self, c: char) -> bool {
+        c >= '0' && c <= '9'
+    }
+    fn is_at_end(&self) -> bool {
+        self.current >= self.contents.len()
+    }
     pub fn get_contents(&self) -> &str {
         self.contents.clone()
     }
     pub fn get_tokens(&self) -> Vec<Token> {
         self.tokens.clone()
-    }
-    pub fn is_at_end(&self) -> bool {
-        self.current >= self.contents.len()
     }
 }
