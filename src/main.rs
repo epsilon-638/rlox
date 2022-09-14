@@ -22,28 +22,37 @@ fn run_file(file_path: &str) {
     run(contents.as_str());
 }
 
+fn get_expression() -> String {
+    let mut expression = String::new();
+
+    io::stdin()
+        .read_line(&mut expression)
+        .expect("Failed to read expr");
+
+    expression
+        .trim()
+        .to_string()
+}
+
+fn repl() {
+    loop {
+        println!(":> ");
+
+        let expression = get_expression();
+
+        if expression.as_str() == ":q" {
+            break;
+        }
+
+        run(expression.as_str());
+    }
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
 
     if args.len() < 3 {
-        
-        loop {
-            println!(":> "); 
-
-            let mut expression = String::new();
-
-            io::stdin()
-                .read_line(&mut expression)
-                .expect("Failed to read expr");
-
-            let expression = &expression.trim();
-
-            if *expression == String::from(":q") {
-                break;
-            }
-
-            run(expression);
-        }
+        repl();
 
         return;
     }
